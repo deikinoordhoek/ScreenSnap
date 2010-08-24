@@ -20,8 +20,17 @@ G_BEGIN_DECLS
 
 typedef struct _ScreenshotEditor        ScreenshotEditor;
 typedef struct _ScreenshotEditorClass   ScreenshotEditorClass;
-
-
+typedef enum{
+    SCREENSHOT_EDITOR_DRAG,
+    SCREENSHOT_EDITOR_DRAG_SCROLLBAR_X,
+    SCREENSHOT_EDITOR_DRAG_SCROLLBAR_Y,
+    SCREENSHOT_EDITOR_NOTHING
+} click_states;
+typedef enum{
+    SCROLLBAR_NONE,
+    SCROLLBAR_X,
+    SCROLLBAR_Y
+} which_scrollbar;
 struct _ScreenshotEditor
 {
     GtkDrawingArea parent;
@@ -31,6 +40,8 @@ struct _ScreenshotEditor
     cairo_surface_t *screenshot;
     gint screenshot_width, screenshot_height;
 	gdouble start_drag_mouse_x, start_drag_mouse_y;
+	gint click_state;
+	gint scrollbar_mouseover;
 
 };
 

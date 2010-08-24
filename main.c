@@ -36,6 +36,7 @@ int main (int argc, char **argv)
         //Configure all the widgets
         gtk_window_set_default_size(GTK_WINDOW(window), 800, 550); 
         screenshot_editor_load_screenshot(SCREENSHOT_EDITOR(main_editor), screenshot, width, height);
+        gtk_window_set_title(GTK_WINDOW(window), "Edit Screenshot");
 		
 		//Pack the widgets
         gtk_container_add (GTK_CONTAINER (window), main_vbox);
@@ -50,6 +51,7 @@ int main (int argc, char **argv)
         
         //Connect the widget signals
         g_signal_connect (window, "destroy", G_CALLBACK (gtk_main_quit), NULL);
+        g_signal_connect (close_button, "clicked", G_CALLBACK (gtk_main_quit), NULL);
         
         //Show all the widgets
         gtk_widget_show_all (window);
