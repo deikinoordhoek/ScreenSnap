@@ -273,17 +273,21 @@ gboolean screenshot_editor_released(GtkWidget *editor, GdkEventButton *event, Sc
 gboolean screenshot_editor_move_mouse(GtkWidget *editor, GdkEventMotion *event, ScreenshotEditor *self){
 	gint width, height;
 	gint scrollbar_dragged;
+	gint screenshot_zoomed_width, screenshot_zoomed_height;
+	screenshot_zoomed_width = self->screenshot_width * self->zoom_level;
+	screenshot_zoomed_height = self->screenshot_height * self->zoom_level;
 	width = screenshot_editor_get_width(self); height = screenshot_editor_get_height(self);
 	if ((event->state & GDK_BUTTON2_MASK) && (self->click_state == SCREENSHOT_EDITOR_DRAG)){
 		gdk_window_set_cursor(editor->window, gdk_cursor_new(GDK_HAND1));
 		self->translate_x = event->x - self->start_drag_mouse_x;
 		self->translate_y = event->y - self->start_drag_mouse_y;
-		if (self->translate_x + self->permanant_translate_x > (self->screenshot_width - width) / 2){
-			self->start_drag_mouse_x = self->start_drag_mouse_x + (self->translate_x + self->permanant_translate_x - ((self->screenshot_width - width + 20) / 2));
+		
+		if (self->translate_x + self->permanant_translate_x > (screenshot_zoomed_width - width) / 2){
+			self->start_drag_mouse_x = self->start_drag_mouse_x + (self->translate_x + self->permanant_translate_x - ((screenshot_zoomed_width - width + 20) / 2));
 			self->translate_x = event->x - self->start_drag_mouse_x;
 		}
-		if (self->translate_x + self->permanant_translate_x < -(self->screenshot_width - width) / 2){
-			self->start_drag_mouse_x = self->start_drag_mouse_x + (self->translate_x + self->permanant_translate_x + ((self->screenshot_width - width + 20) / 2));
+		if (self->translate_x + self->permanant_translate_x < -(screenshot_zoomed_width - width) / 2){
+			self->start_drag_mouse_x = self->start_drag_mouse_x + (self->translate_x + self->permanant_translate_x + ((screenshot_zoomed_width - width + 20) / 2));
 			self->translate_x = event->x - self->start_drag_mouse_x;
 		}
 		if (self->translate_y + self->permanant_translate_y > (self->screenshot_height - height) / 2){
@@ -297,12 +301,12 @@ gboolean screenshot_editor_move_mouse(GtkWidget *editor, GdkEventMotion *event, 
 		gtk_widget_queue_draw(editor);
 	}
 	if (self->click_state == SCREENSHOT_EDITOR_DRAG_SCROLLBAR_X){
-		self->translate_x = (self->screenshot_width / self->zoom_level) * ((double)(self->start_drag_mouse_x - event->x) / (double)width);
-		if (self->translate_x + self->permanant_translate_x > (self->screenshot_width - width) / 2){
-			self->translate_x = (self->screenshot_width - width) / 2 - self->permanant_translate_x;
+		self->translate_x = (screenshot_zoomed_width / self->zoom_level) * ((double)(self->start_drag_mouse_x - event->x) / (double)width);
+		if (self->translate_x + self->permanant_translate_x > (screenshot_zoomed_width - width) / 2){
+			self->translate_x = (screenshot_zoomed_width - width) / 2 - self->permanant_translate_x;
 		}
-		if (self->translate_x + self->permanant_translate_x < -(self->screenshot_width - width) / 2){
-			self->translate_x = -(self->screenshot_width - width) / 2 - self->permanant_translate_x;
+		if (self->translate_x + self->permanant_translate_x < -(screenshot_zoomed_width - width) / 2){
+			self->translate_x = -(screenshot_zoomed_width - width) / 2 - self->permanant_translate_x;
 		}
 		gtk_widget_queue_draw(editor);
 	}
