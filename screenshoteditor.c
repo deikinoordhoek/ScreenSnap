@@ -18,6 +18,7 @@ screenshot_editor_class_init (ScreenshotEditorClass *klass)
 	gdouble start_drag_mouse_x, start_drag_mouse_y;
 	gint click_state;
 	gint scrollbar_mouseover;
+	gdouble zoom_point_x, zoom_point_y;
 }
 
 static void
@@ -44,6 +45,8 @@ screenshot_editor_init (ScreenshotEditor *self)
 	self->permanant_translate_y = 0;
 	self->click_state = SCREENSHOT_EDITOR_NOTHING;
 	self->scrollbar_mouseover = SCROLLBAR_NONE;
+	self->zoom_point_x = 0;
+	self->zoom_point_y = 0;
 	
 }
 
@@ -70,7 +73,7 @@ void screenshot_editor_draw_scrollbars(cairo_t *cr, ScreenshotEditor *self){
 	if (image_pixel_width > width){
 		scrollbar_x_length = (width - (SCROLLBAR_SPACING * 2)) / (image_pixel_width / (double)width);
 		scrollbar_x_position = width - (width / 2 + (width  * ((self->translate_x + self->permanant_translate_x) / (double)image_pixel_width)));
-		if (self->scrollbar_mouseover == SCROLLBAR_X){
+		if (self->scrollbar_mouseover == SCROLLBAR_X || self->click_state == SCREENSHOT_EDITOR_DRAG_SCROLLBAR_X){
 			//Draw the scrollbar as a 12px line with rounded ends. Add a white edge for visibility
 			cairo_set_line_width(cr, 12);
 			cairo_set_source_rgba(cr, 255,255,255, .8);
@@ -82,14 +85,14 @@ void screenshot_editor_draw_scrollbars(cairo_t *cr, ScreenshotEditor *self){
 			cairo_set_source_rgba(cr, .2, .2, .2, .7);
 			cairo_stroke(cr);
 			//Draw lines on it to indicate clickability
-			cairo_set_source_rgba(cr, 0, 0, 0, .5);
+			cairo_set_source_rgba(cr, 0, 0, 0, .5); //Black lines on mouseover
 			cairo_set_line_width(cr, 1);
-			cairo_move_to(cr, scrollbar_x_position, height - 7);
-			cairo_line_to(cr, scrollbar_x_position, height - 13);
-			cairo_move_to(cr, scrollbar_x_position + 4, height - 7);
-			cairo_line_to(cr, scrollbar_x_position + 4, height - 13);
-			cairo_move_to(cr, scrollbar_x_position - 4, height - 7);
-			cairo_line_to(cr, scrollbar_x_position - 4, height - 13);
+			cairo_move_to(cr, scrollbar_x_position + .5, height - 8);
+			cairo_line_to(cr, scrollbar_x_position + .5, height - 12);
+			cairo_move_to(cr, scrollbar_x_position + 4.5, height - 8);
+			cairo_line_to(cr, scrollbar_x_position + 4.5, height - 12);
+			cairo_move_to(cr, scrollbar_x_position - 3.5, height - 8);
+			cairo_line_to(cr, scrollbar_x_position - 3.5, height - 12);
 			cairo_stroke(cr);
 		}
 		else {
@@ -104,21 +107,21 @@ void screenshot_editor_draw_scrollbars(cairo_t *cr, ScreenshotEditor *self){
 			cairo_set_source_rgba(cr, 0, 0, 0, .7);
 			cairo_stroke(cr);
 			//Draw lines on it to indicate clickability
-			cairo_set_source_rgba(cr, 0, 0, 0, .5);
+			cairo_set_source_rgba(cr, 1, 1, 1, .3);
 			cairo_set_line_width(cr, 1);
-			cairo_move_to(cr, scrollbar_x_position, height - 7);
-			cairo_line_to(cr, scrollbar_x_position, height - 13);
-			cairo_move_to(cr, scrollbar_x_position + 4, height - 7);
-			cairo_line_to(cr, scrollbar_x_position + 4, height - 13);
-			cairo_move_to(cr, scrollbar_x_position - 4, height - 7);
-			cairo_line_to(cr, scrollbar_x_position - 4, height - 13);
+			cairo_move_to(cr, scrollbar_x_position + .5, height - 8);
+			cairo_line_to(cr, scrollbar_x_position + .5, height - 12);
+			cairo_move_to(cr, scrollbar_x_position + 4.5, height - 8);
+			cairo_line_to(cr, scrollbar_x_position + 4.5, height - 12);
+			cairo_move_to(cr, scrollbar_x_position - 3.5, height - 8);
+			cairo_line_to(cr, scrollbar_x_position - 3.5, height - 12);
 			cairo_stroke(cr);
 		}
 	}
 	if (image_pixel_height > height){
 		scrollbar_y_length = (height - (SCROLLBAR_SPACING * 2)) / (image_pixel_height / (double)height);
 		scrollbar_y_position = height - (height / 2 + (height  * ((self->translate_y + self->permanant_translate_y) / (double)image_pixel_height)));
-		if (self->scrollbar_mouseover == SCROLLBAR_Y){
+		if (self->scrollbar_mouseover == SCROLLBAR_Y || self->click_state == SCREENSHOT_EDITOR_DRAG_SCROLLBAR_Y){
 			//Draw the scrollbar as a 12px line with rounded ends. Add a white edge for visibility
 			cairo_set_line_width(cr, 12);
 			cairo_set_source_rgba(cr, 255, 255, 255, .8);
@@ -132,12 +135,12 @@ void screenshot_editor_draw_scrollbars(cairo_t *cr, ScreenshotEditor *self){
 			//Draw lines on it to indicate clickability
 			cairo_set_source_rgba(cr, 0, 0, 0, .5);
 			cairo_set_line_width(cr, 1);
-			cairo_move_to(cr, width - 7, scrollbar_y_position);
-			cairo_line_to(cr, width - 13, scrollbar_y_position);
-			cairo_move_to(cr, width - 7, scrollbar_y_position + 4);
-			cairo_line_to(cr, width - 13, scrollbar_y_position + 4);
-			cairo_move_to(cr, width - 7, scrollbar_y_position - 4);
-			cairo_line_to(cr, width - 13, scrollbar_y_position - 4);
+			cairo_move_to(cr, width - 8, scrollbar_y_position + .5);
+			cairo_line_to(cr, width - 12, scrollbar_y_position + .5);
+			cairo_move_to(cr, width - 8, scrollbar_y_position + 4.5);
+			cairo_line_to(cr, width - 12, scrollbar_y_position + 4.5);
+			cairo_move_to(cr, width - 8, scrollbar_y_position - 3.5);
+			cairo_line_to(cr, width - 12, scrollbar_y_position - 3.5);
 			cairo_stroke(cr);
 		} 
 		else {
@@ -152,14 +155,14 @@ void screenshot_editor_draw_scrollbars(cairo_t *cr, ScreenshotEditor *self){
 			cairo_set_source_rgba(cr, 0, 0, 0, .7);
 			cairo_stroke(cr);
 			//Draw lines on it to indicate clickability
-			cairo_set_source_rgba(cr, 0, 0, 0, .5);
+			cairo_set_source_rgba(cr, 1, 1, 1, .3);
 			cairo_set_line_width(cr, 1);
-			cairo_move_to(cr, width - 7, scrollbar_y_position);
-			cairo_line_to(cr, width - 13, scrollbar_y_position);
-			cairo_move_to(cr, width - 7, scrollbar_y_position + 4);
-			cairo_line_to(cr, width - 13, scrollbar_y_position + 4);
-			cairo_move_to(cr, width - 7, scrollbar_y_position - 4);
-			cairo_line_to(cr, width - 13, scrollbar_y_position - 4);
+			cairo_move_to(cr, width - 8, scrollbar_y_position + .5);
+			cairo_line_to(cr, width - 12, scrollbar_y_position + .5);
+			cairo_move_to(cr, width - 8, scrollbar_y_position + 4.5);
+			cairo_line_to(cr, width - 12, scrollbar_y_position + 4.5);
+			cairo_move_to(cr, width - 8, scrollbar_y_position - 3.5);
+			cairo_line_to(cr, width - 12, scrollbar_y_position - 3.5);
 			cairo_stroke(cr);
 		}
 	}
@@ -203,8 +206,9 @@ void screenshot_editor_draw_screenshot(cairo_t *cr, ScreenshotEditor *self){
 	cairo_save(cr);
 	//Zoom the view according to zoom_level. Center it in the middle of the view.
 	cairo_translate(cr, (width / 2) - ((self->screenshot_width * self->zoom_level) / 2) + self->translate_x + self->permanant_translate_x, (height / 2) - ((self->screenshot_height * self->zoom_level) / 2) + self->translate_y + self->permanant_translate_y);
+	cairo_translate(cr, -self->zoom_point_x , -self->zoom_point_y);
     cairo_scale(cr, self->zoom_level, self->zoom_level);
-    
+    cairo_translate(cr, self->zoom_point_x, self->zoom_point_y);
     //Set the source to the screenshot and draw.
     cairo_set_source_surface(cr, self->screenshot, 0, 0);
     cairo_paint(cr);
@@ -225,6 +229,7 @@ void screenshot_editor_draw_screenshot(cairo_t *cr, ScreenshotEditor *self){
 }
 gboolean screenshot_editor_expose(GtkWidget *editor, GdkEventExpose *event, ScreenshotEditor *self){
     cairo_t *cr;
+    char print_string[50];
     cr = gdk_cairo_create(editor->window);
 	
 	//Fill the widget with a darker color
@@ -236,6 +241,20 @@ gboolean screenshot_editor_expose(GtkWidget *editor, GdkEventExpose *event, Scre
     
     //Draw the scrollbars
     screenshot_editor_draw_scrollbars(cr, self);
+    //Show some debug data
+    cairo_set_source_rgba(cr, 0, 0, 0, .7);
+	cairo_rectangle(cr, 0, 0, 100, 15);
+    cairo_fill(cr);
+    
+    cairo_set_source_rgb(cr, 1, 1, 1); 
+	cairo_select_font_face(cr, "UbuntuBeta",
+      CAIRO_FONT_SLANT_NORMAL,
+      CAIRO_FONT_WEIGHT_NORMAL);
+	cairo_set_font_size(cr, 13);
+	cairo_move_to(cr, 10, 10);
+	sprintf(print_string, "%f %f %f", self->zoom_level, self->zoom_point_x, self->zoom_point_y);
+	cairo_show_text(cr, print_string);
+	
     
     cairo_destroy(cr);
     return FALSE;
@@ -243,7 +262,20 @@ gboolean screenshot_editor_expose(GtkWidget *editor, GdkEventExpose *event, Scre
 gboolean screenshot_editor_clicked(GtkWidget *editor, GdkEventButton *event, ScreenshotEditor *self){
 	if (event->button == 2){
 		gdk_window_set_cursor(editor->window, gdk_cursor_new(GDK_HAND1));
-		self->click_state = SCREENSHOT_EDITOR_DRAG;
+		gdouble width = screenshot_editor_get_width(self);
+		gdouble height = screenshot_editor_get_height(self);
+		if (self->screenshot_width * self->zoom_level < screenshot_editor_get_width(self)  &&  self->screenshot_height * self->zoom_level < screenshot_editor_get_height(self)){
+			self->click_state = SCREENSHOT_EDITOR_NOTHING;
+			self->permanant_translate_x = 0;
+			self->permanant_translate_y = 0;
+			self->translate_x = 0;
+			self->translate_y = 0;
+			gtk_widget_queue_draw(editor);
+		}
+		else{
+			self->click_state = SCREENSHOT_EDITOR_DRAG;
+		}
+		
 		self->start_drag_mouse_x = event->x;
 		self->start_drag_mouse_y = event->y;
 	}
@@ -261,13 +293,14 @@ gboolean screenshot_editor_clicked(GtkWidget *editor, GdkEventButton *event, Scr
 	}
     return FALSE;
 }
-gboolean screenshot_editor_released(GtkWidget *editor, GdkEventButton *event, ScreenshotEditor *self){
+gboolean screenshot_editor_released(GtkWidget *widget, GdkEventButton *event, ScreenshotEditor *self){
 	self->permanant_translate_x += self->translate_x;
 	self->permanant_translate_y += self->translate_y;
 	self->translate_x = 0;
 	self->translate_y = 0;
 	self->click_state = SCREENSHOT_EDITOR_NOTHING;
-	gdk_window_set_cursor(editor->window, NULL);
+	gdk_window_set_cursor(widget->window, NULL);
+	gtk_widget_queue_draw(widget);
     return FALSE;
 }
 gboolean screenshot_editor_move_mouse(GtkWidget *editor, GdkEventMotion *event, ScreenshotEditor *self){
@@ -290,12 +323,12 @@ gboolean screenshot_editor_move_mouse(GtkWidget *editor, GdkEventMotion *event, 
 			self->start_drag_mouse_x = self->start_drag_mouse_x + (self->translate_x + self->permanant_translate_x + ((screenshot_zoomed_width - width + 20) / 2));
 			self->translate_x = event->x - self->start_drag_mouse_x;
 		}
-		if (self->translate_y + self->permanant_translate_y > (self->screenshot_height - height) / 2){
-			self->start_drag_mouse_y = self->start_drag_mouse_y + (self->translate_y + self->permanant_translate_y - ((self->screenshot_height - height + 20) / 2));
+		if (self->translate_y + self->permanant_translate_y > (screenshot_zoomed_height - height) / 2){
+			self->start_drag_mouse_y = self->start_drag_mouse_y + (self->translate_y + self->permanant_translate_y - ((screenshot_zoomed_height - height + 20) / 2));
 			self->translate_y = event->y - self->start_drag_mouse_y;
 		}
-		if (self->translate_y + self->permanant_translate_y < -(self->screenshot_height - height) / 2){
-			self->start_drag_mouse_y = self->start_drag_mouse_y + (self->translate_y + self->permanant_translate_y + ((self->screenshot_height - height + 20) / 2));
+		if (self->translate_y + self->permanant_translate_y < -(screenshot_zoomed_height - height) / 2){
+			self->start_drag_mouse_y = self->start_drag_mouse_y + (self->translate_y + self->permanant_translate_y + ((screenshot_zoomed_height - height + 20) / 2));
 			self->translate_y = event->y - self->start_drag_mouse_y;
 		}
 		gtk_widget_queue_draw(editor);
@@ -311,12 +344,12 @@ gboolean screenshot_editor_move_mouse(GtkWidget *editor, GdkEventMotion *event, 
 		gtk_widget_queue_draw(editor);
 	}
 	if (self->click_state == SCREENSHOT_EDITOR_DRAG_SCROLLBAR_Y){
-		self->translate_y = (self->screenshot_height / self->zoom_level) * ((double)(self->start_drag_mouse_y - event->y) / (double)height);
-		if (self->translate_y + self->permanant_translate_y > (self->screenshot_height - height) / 2){
-			self->translate_y = (self->screenshot_height - height) / 2 - self->permanant_translate_y;
+		self->translate_y = (screenshot_zoomed_height / self->zoom_level) * ((double)(self->start_drag_mouse_y - event->y) / (double)height);
+		if (self->translate_y + self->permanant_translate_y > (screenshot_zoomed_height - height) / 2){
+			self->translate_y = (screenshot_zoomed_height - height) / 2 - self->permanant_translate_y;
 		}
-		if (self->translate_y + self->permanant_translate_y < -(self->screenshot_height - height) / 2){
-			self->translate_y = -(self->screenshot_height - height) / 2 - self->permanant_translate_y;
+		if (self->translate_y + self->permanant_translate_y < -(screenshot_zoomed_height - height) / 2){
+			self->translate_y = -(screenshot_zoomed_height - height) / 2 - self->permanant_translate_y;
 		}
 		gtk_widget_queue_draw(editor);
 	}
@@ -337,14 +370,26 @@ void screenshot_editor_load_screenshot(ScreenshotEditor *self, cairo_surface_t *
     self->screenshot_height = screenshot_height;
 
 }
-
 void screenshot_editor_scroll(GtkWidget *widget, GdkEventScroll *event, ScreenshotEditor *self){
+	double mouse_pixel_x, mouse_pixel_y;
+	double new_mouse_pixel_x, new_mouse_pixel_y;
 	if (event->state & GDK_CONTROL_MASK){
 		if (event->direction == GDK_SCROLL_UP){
+			
+			self->zoom_point_x = (screenshot_editor_get_width(self) / 2) - event->x + self->translate_x + self->permanant_translate_x;
+			self->zoom_point_y = (screenshot_editor_get_height(self) / 2) - event->y + self->translate_y + self->permanant_translate_y;
 			self->zoom_level /= .9;
 		}
 		if (event->direction == GDK_SCROLL_DOWN && self->zoom_level > .1){
 			self->zoom_level *= .9;
+			self->zoom_point_x = (((screenshot_editor_get_width(self) / 2) - event->x + self->translate_x + self->permanant_translate_x));
+			self->zoom_point_y = (((screenshot_editor_get_height(self) / 2) - event->y + self->translate_y + self->permanant_translate_y));
+			if (self->screenshot_width * self->zoom_level < screenshot_editor_get_width(self)  &&  self->screenshot_height * self->zoom_level < screenshot_editor_get_height(self)){
+				self->permanant_translate_x = 0;
+				self->permanant_translate_y = 0;
+				self->translate_x = 0;
+				self->translate_y = 0;
+			}
 		}
 		gtk_widget_queue_draw(widget);
 	}

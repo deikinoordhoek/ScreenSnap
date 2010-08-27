@@ -35,13 +35,14 @@ struct _ScreenshotEditor
 {
     GtkDrawingArea parent;
     gdouble zoom_level;
-    gint translate_x, translate_y, permanant_translate_x, permanant_translate_y;
+    gdouble translate_x, translate_y, permanant_translate_x, permanant_translate_y;
     /* <private> */
     cairo_surface_t *screenshot;
     gint screenshot_width, screenshot_height;
 	gdouble start_drag_mouse_x, start_drag_mouse_y;
 	gint click_state;
 	gint scrollbar_mouseover;
+	gdouble zoom_point_x, zoom_point_y;
 
 };
 
