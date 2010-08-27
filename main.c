@@ -10,7 +10,7 @@ int main (int argc, char **argv)
         GtkWidget *main_editor;
         GtkWidget *main_vbox, *main_editor_frame, *buttons_box, *save_button;
         GtkWidget *close_button, *upload_button, *copy_button;
-        GtkWidget *main_editor_hbox;
+        GtkWidget *main_editor_hbox, *scroll_window;
         cairo_surface_t *screenshot;
         gint width, height;
 
@@ -31,7 +31,7 @@ int main (int argc, char **argv)
         close_button = gtk_button_new_with_label("Dismiss");
         copy_button = gtk_button_new_with_label("Copy to clipboard");
         upload_button = gtk_button_new_with_label("Upload to web");
-        
+        scroll_window = gtk_scrolled_window_new(NULL, NULL);
         
         //Configure all the widgets
         gtk_window_set_default_size(GTK_WINDOW(window), 800, 550); 
@@ -40,8 +40,8 @@ int main (int argc, char **argv)
 		
 		//Pack the widgets
         gtk_container_add (GTK_CONTAINER (window), main_vbox);
-		gtk_container_add (GTK_CONTAINER (main_editor_frame), main_editor);
-		gtk_box_pack_start(GTK_BOX (main_editor_hbox), main_editor_frame, TRUE, TRUE, 10);
+		gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW(scroll_window), main_editor);
+		gtk_box_pack_start(GTK_BOX (main_editor_hbox), scroll_window, TRUE, TRUE, 0);
 		gtk_box_pack_start(GTK_BOX (main_vbox), main_editor_hbox, TRUE, TRUE, 10);
         gtk_box_pack_start (GTK_BOX (main_vbox), buttons_box, FALSE, FALSE, 5);
         gtk_box_pack_end (GTK_BOX (buttons_box), close_button, FALSE, FALSE, 10);
