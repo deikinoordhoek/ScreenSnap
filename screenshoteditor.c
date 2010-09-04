@@ -1,11 +1,14 @@
 #include "screenshoteditor.h"
+
 #include <gtk/gtk.h>
 #include <cairo.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <math.h>
 G_DEFINE_TYPE (ScreenshotEditor, screenshot_editor, GTK_TYPE_DRAWING_AREA);
 #define SCROLLBAR_SPACING  25
+
 
 static void
 screenshot_editor_class_init (ScreenshotEditorClass *klass)
@@ -19,6 +22,8 @@ screenshot_editor_class_init (ScreenshotEditorClass *klass)
 	gint click_state;
 	gint scrollbar_mouseover;
 	gdouble zoom_point_x, zoom_point_y;
+	GtkWidget *scrolled_window;
+	gboolean needs_update_scrollbars;
 }
 
 static void
@@ -46,18 +51,15 @@ screenshot_editor_init (ScreenshotEditor *self)
 	self->click_state = SCREENSHOT_EDITOR_NOTHING;
 	self->zoom_point_x = 0;
 	self->zoom_point_y = 0;
+	self->scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+	
+	//Pack the screenshot editor widget into the scrolled window
+	gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW(self->scrolled_window), GTK_WIDGET(self));
 	
 }
 
-static gint screenshot_editor_get_width(ScreenshotEditor *editor){
-	GtkAllocation allocation = {0, 0, -1, -1};
-	gtk_widget_get_allocation(GTK_WIDGET(editor), &allocation);
-	return allocation.width;
-}
-static gint screenshot_editor_get_height(ScreenshotEditor *editor){
-	GtkAllocation allocation = {0, 0, -1, -1};
-	gtk_widget_get_allocation(GTK_WIDGET(editor), &allocation);
-	return allocation.height;
+gboolean screenshot_editor_timer_handler(GtkWidget *widget, ScreenshotEditor *self){
+	
 }
 
 void screenshot_editor_draw_screenshot(cairo_t *cr, ScreenshotEditor *self){
@@ -143,8 +145,6 @@ gboolean screenshot_editor_clicked(GtkWidget *editor, GdkEventButton *event, Scr
     return FALSE;
 }
 gboolean screenshot_editor_released(GtkWidget *widget, GdkEventButton *event, ScreenshotEditor *self){
-	self->permanant_translate_x += self->translate_x;
-	self->permanant_translate_y += self->translate_y;
 	self->translate_x = 0;
 	self->translate_y = 0;
 	self->click_state = SCREENSHOT_EDITOR_NOTHING;
@@ -161,26 +161,12 @@ gboolean screenshot_editor_move_mouse(GtkWidget *editor, GdkEventMotion *event, 
 	width = screenshot_editor_get_width(self); height = screenshot_editor_get_height(self);
 	if ((event->state & GDK_BUTTON2_MASK) && (self->click_state == SCREENSHOT_EDITOR_DRAG)){
 		gdk_window_set_cursor(editor->window, gdk_cursor_new(GDK_HAND1));
-		self->translate_x = event->x - self->start_drag_mouse_x;
-		self->translate_y = event->y - self->start_drag_mouse_y;
+		self->translate_x = self->start_drag_mouse_x - event->x;
+		self->translate_y = self->start_drag_mouse_y - event->y;
 		
-		if (self->translate_x + self->permanant_translate_x > (screenshot_zoomed_width - width) / 2){
-			self->start_drag_mouse_x = self->start_drag_mouse_x + (self->translate_x + self->permanant_translate_x - ((screenshot_zoomed_width - width + 20) / 2));
-			self->translate_x = event->x - self->start_drag_mouse_x;
-		}
-		if (self->translate_x + self->permanant_translate_x < -(screenshot_zoomed_width - width) / 2){
-			self->start_drag_mouse_x = self->start_drag_mouse_x + (self->translate_x + self->permanant_translate_x + ((screenshot_zoomed_width - width + 20) / 2));
-			self->translate_x = event->x - self->start_drag_mouse_x;
-		}
-		if (self->translate_y + self->permanant_translate_y > (screenshot_zoomed_height - height) / 2){
-			self->start_drag_mouse_y = self->start_drag_mouse_y + (self->translate_y + self->permanant_translate_y - ((screenshot_zoomed_height - height + 20) / 2));
-			self->translate_y = event->y - self->start_drag_mouse_y;
-		}
-		if (self->translate_y + self->permanant_translate_y < -(screenshot_zoomed_height - height) / 2){
-			self->start_drag_mouse_y = self->start_drag_mouse_y + (self->translate_y + self->permanant_translate_y + ((screenshot_zoomed_height - height + 20) / 2));
-			self->translate_y = event->y - self->start_drag_mouse_y;
-		}
-		gtk_widget_queue_draw(editor);
+		screenshot_editor_scroll_relative(self, self->translate_x, self->translate_y);
+		
+		self->needs_update_scrollbars = TRUE;
 	}
 	
     return FALSE;

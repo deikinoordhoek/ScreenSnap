@@ -9,6 +9,7 @@
 
 #include <gtk/gtk.h>
 
+
 G_BEGIN_DECLS
 
 #define SCREENSHOT_TYPE_EDITOR                  (screenshot_editor_get_type ())
@@ -36,6 +37,7 @@ struct _ScreenshotEditor
     GtkDrawingArea parent;
     gdouble zoom_level;
     gdouble translate_x, translate_y, permanant_translate_x, permanant_translate_y;
+    GtkWidget *scrolled_window;
     /* <private> */
     cairo_surface_t *screenshot;
     gint screenshot_width, screenshot_height;
@@ -43,6 +45,8 @@ struct _ScreenshotEditor
 	gint click_state;
 	gint scrollbar_mouseover;
 	gdouble zoom_point_x, zoom_point_y;
+	gboolean needs_update_scrollbars;
+	
 
 };
 
@@ -65,6 +69,8 @@ gboolean screenshot_editor_move_mouse(GtkWidget *editor, GdkEventMotion *event, 
 gboolean screenshot_editor_released(GtkWidget *editor, GdkEventButton *event, ScreenshotEditor *self);
 void screenshot_editor_draw_screenshot(cairo_t *cr, ScreenshotEditor *self);
 void screenshot_editor_draw_scrollbars(cairo_t *cr, ScreenshotEditor *self);
+gboolean screenshot_editor_timer_handler(GtkWidget *widget, ScreenshotEditor *self);
+#include "screenshoteditor-helpers.h"
 G_END_DECLS
 
 #endif /* __SCREENSHOT_EDITOR_H__ */

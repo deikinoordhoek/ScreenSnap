@@ -40,8 +40,7 @@ int main (int argc, char **argv)
 		
 		//Pack the widgets
         gtk_container_add (GTK_CONTAINER (window), main_vbox);
-		gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW(scroll_window), main_editor);
-		gtk_box_pack_start(GTK_BOX (main_editor_hbox), scroll_window, TRUE, TRUE, 0);
+		gtk_box_pack_start(GTK_BOX (main_editor_hbox), SCREENSHOT_EDITOR(main_editor)->scrolled_window, TRUE, TRUE, 0);
 		gtk_box_pack_start(GTK_BOX (main_vbox), main_editor_hbox, TRUE, TRUE, 10);
         gtk_box_pack_start (GTK_BOX (main_vbox), buttons_box, FALSE, FALSE, 5);
         gtk_box_pack_end (GTK_BOX (buttons_box), close_button, FALSE, FALSE, 10);
