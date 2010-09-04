@@ -41,6 +41,7 @@ screenshot_editor_init (ScreenshotEditor *self)
     g_signal_connect (GTK_WIDGET(self), "button-press-event", G_CALLBACK (screenshot_editor_clicked), self);
     g_signal_connect (GTK_WIDGET(self), "button-release-event", G_CALLBACK (screenshot_editor_released), self);
     g_signal_connect (GTK_WIDGET(self), "motion-notify-event", G_CALLBACK (screenshot_editor_move_mouse), self);
+    g_timeout_add(10, (GSourceFunc) screenshot_editor_timer_handler, self);
     
     //Initalize a few variables.
     self->zoom_level = 1;
@@ -58,13 +59,17 @@ screenshot_editor_init (ScreenshotEditor *self)
 	
 }
 
-gboolean screenshot_editor_timer_handler(GtkWidget *widget, ScreenshotEditor *self){
-	
+gboolean screenshot_editor_timer_handler(ScreenshotEditor *self){
+	if (self->needs_update_scrollbars == TRUE){
+		self->needs_update_scrollbars = FALSE;
+		screenshot_editor_scroll_relative(self, self->translate_x, self->translate_y);
+	}
+	return TRUE;
 }
 
 void screenshot_editor_draw_screenshot(cairo_t *cr, ScreenshotEditor *self){
 	gint width, height;
-	width = screenshot_editor_get_width(self); height = screenshot_editor_get_height(self);
+	width = screenshot_editor_get_widget_width(GTK_WIDGET(self)); height = screenshot_editor_get_widget_height(GTK_WIDGET(self));
 	cairo_save(cr);
 	//Zoom the view according to zoom_level. Center it in the middle of the view.
 	cairo_translate(cr, -self->zoom_point_x , -self->zoom_point_y);
@@ -97,34 +102,19 @@ gboolean screenshot_editor_expose(GtkWidget *editor, GdkEventExpose *event, Scre
 	cairo_set_source_rgba(cr, 0, 0, 0, .15);
 	cairo_paint(cr);
 	gtk_widget_set_size_request(editor, self->screenshot_width * self->zoom_level, self->screenshot_height * self->zoom_level);
+
 	//Draw the screenshot
 	screenshot_editor_draw_screenshot(cr, self);
-    
-
-    //Show some debug data
-    cairo_set_source_rgba(cr, 0, 0, 0, .7);
-	cairo_rectangle(cr, 0, 0, 100, 15);
-    cairo_fill(cr);
-    
-    cairo_set_source_rgb(cr, 1, 1, 1); 
-	cairo_select_font_face(cr, "UbuntuBeta",
-      CAIRO_FONT_SLANT_NORMAL,
-      CAIRO_FONT_WEIGHT_NORMAL);
-	cairo_set_font_size(cr, 13);
-	cairo_move_to(cr, 10, 10);
-	sprintf(print_string, "%f %f %f", self->zoom_level, self->zoom_point_x, self->zoom_point_y);
-	cairo_show_text(cr, print_string);
-	
-    
+     
     cairo_destroy(cr);
     return FALSE;
 }
 gboolean screenshot_editor_clicked(GtkWidget *editor, GdkEventButton *event, ScreenshotEditor *self){
 	if (event->button == 2){
 		gdk_window_set_cursor(editor->window, gdk_cursor_new(GDK_HAND1));
-		gdouble width = screenshot_editor_get_width(self);
-		gdouble height = screenshot_editor_get_height(self);
-		if (self->screenshot_width * self->zoom_level < screenshot_editor_get_width(self)  &&  self->screenshot_height * self->zoom_level < screenshot_editor_get_height(self)){
+		gdouble width = screenshot_editor_get_widget_width(GTK_WIDGET(self));
+		gdouble height = screenshot_editor_get_widget_height(GTK_WIDGET(self));
+		if (self->screenshot_width * self->zoom_level < screenshot_editor_get_widget_width(GTK_WIDGET(self))  &&  self->screenshot_height * self->zoom_level < screenshot_editor_get_widget_height(GTK_WIDGET(self))){
 			self->click_state = SCREENSHOT_EDITOR_NOTHING;
 			self->permanant_translate_x = 0;
 			self->permanant_translate_y = 0;
@@ -155,17 +145,10 @@ gboolean screenshot_editor_released(GtkWidget *widget, GdkEventButton *event, Sc
 gboolean screenshot_editor_move_mouse(GtkWidget *editor, GdkEventMotion *event, ScreenshotEditor *self){
 	gint width, height;
 	gint scrollbar_dragged;
-	gint screenshot_zoomed_width, screenshot_zoomed_height;
-	screenshot_zoomed_width = self->screenshot_width * self->zoom_level;
-	screenshot_zoomed_height = self->screenshot_height * self->zoom_level;
-	width = screenshot_editor_get_width(self); height = screenshot_editor_get_height(self);
 	if ((event->state & GDK_BUTTON2_MASK) && (self->click_state == SCREENSHOT_EDITOR_DRAG)){
 		gdk_window_set_cursor(editor->window, gdk_cursor_new(GDK_HAND1));
 		self->translate_x = self->start_drag_mouse_x - event->x;
 		self->translate_y = self->start_drag_mouse_y - event->y;
-		
-		screenshot_editor_scroll_relative(self, self->translate_x, self->translate_y);
-		
 		self->needs_update_scrollbars = TRUE;
 	}
 	
@@ -188,16 +171,16 @@ void screenshot_editor_scroll(GtkWidget *widget, GdkEventScroll *event, Screensh
 	if (event->state & GDK_CONTROL_MASK){
 		if (event->direction == GDK_SCROLL_UP){
 			
-			self->zoom_point_x = (screenshot_editor_get_width(self) / 2) - event->x + self->translate_x + self->permanant_translate_x;
-			self->zoom_point_y = (screenshot_editor_get_height(self) / 2) - event->y + self->translate_y + self->permanant_translate_y;
+			self->zoom_point_x = (screenshot_editor_get_widget_width(GTK_WIDGET(self)) / 2) - event->x + self->translate_x + self->permanant_translate_x;
+			self->zoom_point_y = (screenshot_editor_get_widget_height(GTK_WIDGET(self)) / 2) - event->y + self->translate_y + self->permanant_translate_y;
 			self->zoom_level /= .9;
 		}
 		if (event->direction == GDK_SCROLL_DOWN && self->zoom_level > .1){
-			self->zoom_point_x = (((screenshot_editor_get_width(self) / 2) - event->x + self->translate_x + self->permanant_translate_x));
-			self->zoom_point_y = (((screenshot_editor_get_height(self) / 2) - event->y + self->translate_y + self->permanant_translate_y));
+			self->zoom_point_x = (((screenshot_editor_get_widget_width(GTK_WIDGET(self)) / 2) - event->x + self->translate_x + self->permanant_translate_x));
+			self->zoom_point_y = (((screenshot_editor_get_widget_height(GTK_WIDGET(self)) / 2) - event->y + self->translate_y + self->permanant_translate_y));
 			self->zoom_level *= .9;
 			
-			if (self->screenshot_width * self->zoom_level < screenshot_editor_get_width(self)  &&  self->screenshot_height * self->zoom_level < screenshot_editor_get_height(self)){
+			if (self->screenshot_width * self->zoom_level < screenshot_editor_get_widget_width(GTK_WIDGET(self))  &&  self->screenshot_height * self->zoom_level < screenshot_editor_get_widget_height(GTK_WIDGET(self))){
 				self->permanant_translate_x = 0;
 				self->permanant_translate_y = 0;
 				self->translate_x = 0;

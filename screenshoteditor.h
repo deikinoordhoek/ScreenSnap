@@ -69,7 +69,7 @@ gboolean screenshot_editor_move_mouse(GtkWidget *editor, GdkEventMotion *event, 
 gboolean screenshot_editor_released(GtkWidget *editor, GdkEventButton *event, ScreenshotEditor *self);
 void screenshot_editor_draw_screenshot(cairo_t *cr, ScreenshotEditor *self);
 void screenshot_editor_draw_scrollbars(cairo_t *cr, ScreenshotEditor *self);
-gboolean screenshot_editor_timer_handler(GtkWidget *widget, ScreenshotEditor *self);
+gboolean screenshot_editor_timer_handler(ScreenshotEditor *self);
 #include "screenshoteditor-helpers.h"
 G_END_DECLS
 
