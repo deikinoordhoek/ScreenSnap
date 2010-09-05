@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include <math.h>
+#include <time.h>
 G_DEFINE_TYPE (ScreenshotEditor, screenshot_editor, GTK_TYPE_DRAWING_AREA);
 #define SCROLLBAR_SPACING  25
 
@@ -24,6 +24,7 @@ screenshot_editor_class_init (ScreenshotEditorClass *klass)
 	gdouble zoom_point_x, zoom_point_y;
 	GtkWidget *scrolled_window;
 	gboolean needs_update_scrollbars;
+	gboolean supress_expose;
 }
 
 static void
@@ -41,7 +42,7 @@ screenshot_editor_init (ScreenshotEditor *self)
     g_signal_connect (GTK_WIDGET(self), "button-press-event", G_CALLBACK (screenshot_editor_clicked), self);
     g_signal_connect (GTK_WIDGET(self), "button-release-event", G_CALLBACK (screenshot_editor_released), self);
     g_signal_connect (GTK_WIDGET(self), "motion-notify-event", G_CALLBACK (screenshot_editor_move_mouse), self);
-    g_timeout_add(10, (GSourceFunc) screenshot_editor_timer_handler, self);
+    g_timeout_add(100, (GSourceFunc) screenshot_editor_timer_handler, self);
     
     //Initalize a few variables.
     self->zoom_level = 1;
@@ -53,9 +54,10 @@ screenshot_editor_init (ScreenshotEditor *self)
 	self->zoom_point_x = 0;
 	self->zoom_point_y = 0;
 	self->scrolled_window = gtk_scrolled_window_new(NULL, NULL);
-	
+	self->supress_expose = FALSE;
 	//Pack the screenshot editor widget into the scrolled window
 	gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW(self->scrolled_window), GTK_WIDGET(self));
+	
 	
 }
 
@@ -94,20 +96,22 @@ void screenshot_editor_draw_screenshot(cairo_t *cr, ScreenshotEditor *self){
     cairo_restore(cr);
 }
 gboolean screenshot_editor_expose(GtkWidget *editor, GdkEventExpose *event, ScreenshotEditor *self){
-    cairo_t *cr;
-    char print_string[50];
-    cr = gdk_cairo_create(editor->window);
+    if (self->supress_expose == FALSE){
+		cairo_t *cr;
+		char print_string[50];
+		cr = gdk_cairo_create(editor->window);
 	
-	//Fill the widget with a darker color
-	cairo_set_source_rgba(cr, 0, 0, 0, .15);
-	cairo_paint(cr);
-	gtk_widget_set_size_request(editor, self->screenshot_width * self->zoom_level, self->screenshot_height * self->zoom_level);
+		//Fill the widget with a darker color
+		cairo_set_source_rgba(cr, 0, 0, 0, .15);
+		cairo_paint(cr);
+		gtk_widget_set_size_request(editor, self->screenshot_width * self->zoom_level, self->screenshot_height * self->zoom_level);
 
-	//Draw the screenshot
-	screenshot_editor_draw_screenshot(cr, self);
+		//Draw the screenshot
+		screenshot_editor_draw_screenshot(cr, self);
      
-    cairo_destroy(cr);
-    return FALSE;
+		cairo_destroy(cr);
+	}
+	return FALSE;
 }
 gboolean screenshot_editor_clicked(GtkWidget *editor, GdkEventButton *event, ScreenshotEditor *self){
 	if (event->button == 2){
@@ -145,11 +149,43 @@ gboolean screenshot_editor_released(GtkWidget *widget, GdkEventButton *event, Sc
 gboolean screenshot_editor_move_mouse(GtkWidget *editor, GdkEventMotion *event, ScreenshotEditor *self){
 	gint width, height;
 	gint scrollbar_dragged;
+	int max_x, max_y;
+	int x, y;
+	GtkWidget *h_scrollbar, *v_scrollbar;
+	GtkAdjustment *h_adjust, *v_adjust;
 	if ((event->state & GDK_BUTTON2_MASK) && (self->click_state == SCREENSHOT_EDITOR_DRAG)){
+		
 		gdk_window_set_cursor(editor->window, gdk_cursor_new(GDK_HAND1));
-		self->translate_x = self->start_drag_mouse_x - event->x;
+		
+		self->translate_x = self->start_drag_mouse_x - event->x; //Get the amount by which the scrollbars are to be moved
 		self->translate_y = self->start_drag_mouse_y - event->y;
-		self->needs_update_scrollbars = TRUE;
+		
+		h_adjust = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW(self->scrolled_window));	
+		v_adjust = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW(self->scrolled_window));
+		h_scrollbar = gtk_scrolled_window_get_hscrollbar (GTK_SCROLLED_WINDOW(self->scrolled_window));
+		v_scrollbar = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW(self->scrolled_window));
+		
+		x = gtk_adjustment_get_value(GTK_ADJUSTMENT(h_adjust)) + self->translate_x; //Get the absolute position of the scrollbars
+		y = gtk_adjustment_get_value(GTK_ADJUSTMENT(v_adjust)) + self->translate_y;
+		
+		max_x = screenshot_editor_get_widget_width(GTK_WIDGET(self)) - screenshot_editor_get_widget_width(self->scrolled_window) + screenshot_editor_get_widget_width(GTK_WIDGET(v_scrollbar)) + 5;
+		max_y = screenshot_editor_get_widget_height(GTK_WIDGET(self)) - screenshot_editor_get_widget_height(self->scrolled_window) + screenshot_editor_get_widget_height(GTK_WIDGET(h_scrollbar)) + 5;
+		
+		//Check for out-of-bounds, and correct for it.
+		if (x < 0) {
+			self->start_drag_mouse_x = self->start_drag_mouse_x + (0 - x);
+		}
+		if (y < 0) {
+			self->start_drag_mouse_y = self->start_drag_mouse_y + (0 - y);
+		}
+		if (y > max_y) {
+			self->start_drag_mouse_y = self->start_drag_mouse_y + (max_y - y);
+		}
+		if (x > max_x) {
+			self->start_drag_mouse_x = self->start_drag_mouse_x + (max_x - x);
+		}
+		
+		self->needs_update_scrollbars = TRUE; //Set the scrollbar update flag.
 	}
 	
     return FALSE;
@@ -163,7 +199,6 @@ void screenshot_editor_load_screenshot(ScreenshotEditor *self, cairo_surface_t *
     self->screenshot = screenshot;
     self->screenshot_width = screenshot_width;
     self->screenshot_height = screenshot_height;
-
 }
 void screenshot_editor_scroll(GtkWidget *widget, GdkEventScroll *event, ScreenshotEditor *self){
 	double mouse_pixel_x, mouse_pixel_y;

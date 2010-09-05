@@ -46,6 +46,7 @@ struct _ScreenshotEditor
 	gint scrollbar_mouseover;
 	gdouble zoom_point_x, zoom_point_y;
 	gboolean needs_update_scrollbars;
+	gboolean supress_expose;
 	
 
 };

@@ -41,8 +41,7 @@ void screenshot_editor_set_scroll_x (ScreenshotEditor *self, gdouble scroll_x){
 void screenshot_editor_scroll_relative(ScreenshotEditor *self, gdouble move_x, gdouble move_y){
 	gdouble x, y;
 	int max_x, max_y;
-	GtkAdjustment *h_adjust;
-	GtkAdjustment *v_adjust;
+	GtkAdjustment *h_adjust, *v_adjust;
 	GtkWidget *h_scrollbar, *v_scrollbar;
 	h_adjust = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW(self->scrolled_window));	
 	v_adjust = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW(self->scrolled_window));
