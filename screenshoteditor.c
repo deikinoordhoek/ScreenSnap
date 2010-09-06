@@ -73,10 +73,9 @@ void screenshot_editor_draw_screenshot(cairo_t *cr, ScreenshotEditor *self){
 	gint width, height;
 	width = screenshot_editor_get_widget_width(GTK_WIDGET(self)); height = screenshot_editor_get_widget_height(GTK_WIDGET(self));
 	cairo_save(cr);
-	//Zoom the view according to zoom_level. Center it in the middle of the view.
-	cairo_translate(cr, -self->zoom_point_x , -self->zoom_point_y);
+	//Zoom the view according to zoom_level.
     cairo_scale(cr, self->zoom_level, self->zoom_level);
-    cairo_translate(cr, self->zoom_point_x, self->zoom_point_y);
+    
     //Set the source to the screenshot and draw.
     cairo_set_source_surface(cr, self->screenshot, 0, 0);
     cairo_paint(cr);
@@ -147,8 +146,6 @@ gboolean screenshot_editor_released(GtkWidget *widget, GdkEventButton *event, Sc
     return FALSE;
 }
 gboolean screenshot_editor_move_mouse(GtkWidget *editor, GdkEventMotion *event, ScreenshotEditor *self){
-	gint width, height;
-	gint scrollbar_dragged;
 	int max_x, max_y;
 	int x, y;
 	GtkWidget *h_scrollbar, *v_scrollbar;
@@ -203,17 +200,30 @@ void screenshot_editor_load_screenshot(ScreenshotEditor *self, cairo_surface_t *
 void screenshot_editor_scroll(GtkWidget *widget, GdkEventScroll *event, ScreenshotEditor *self){
 	double mouse_pixel_x, mouse_pixel_y;
 	double new_mouse_pixel_x, new_mouse_pixel_y;
+	gint shift_x, shift_y;
 	if (event->state & GDK_CONTROL_MASK){
 		if (event->direction == GDK_SCROLL_UP){
 			
-			self->zoom_point_x = (screenshot_editor_get_widget_width(GTK_WIDGET(self)) / 2) - event->x + self->translate_x + self->permanant_translate_x;
-			self->zoom_point_y = (screenshot_editor_get_widget_height(GTK_WIDGET(self)) / 2) - event->y + self->translate_y + self->permanant_translate_y;
+			self->zoom_point_x = (screenshot_editor_get_widget_width(GTK_WIDGET(self)) / 2) - event->x;
+			self->zoom_point_y = (screenshot_editor_get_widget_height(GTK_WIDGET(self)) / 2) - event->y;
+			shift_x = self->zoom_point_x * self->zoom_level / (self->zoom_level / .9);
+			shift_y = self->zoom_point_y * self->zoom_level / (self->zoom_level / .9);
 			self->zoom_level /= .9;
+			
+			g_printf("%i %i %f\n", shift_x, shift_y, self->zoom_level);
+			g_printf("%i %i\n", self->zoom_point_x, self->zoom_point_y);
+			g_printf("-------------");
+			gtk_widget_queue_draw(widget);
+			screenshot_editor_set_scroll_x(self, shift_x);
+			screenshot_editor_set_scroll_y(self, shift_y);
+			
 		}
 		if (event->direction == GDK_SCROLL_DOWN && self->zoom_level > .1){
-			self->zoom_point_x = (((screenshot_editor_get_widget_width(GTK_WIDGET(self)) / 2) - event->x + self->translate_x + self->permanant_translate_x));
-			self->zoom_point_y = (((screenshot_editor_get_widget_height(GTK_WIDGET(self)) / 2) - event->y + self->translate_y + self->permanant_translate_y));
+			self->zoom_point_x = (screenshot_editor_get_widget_width(GTK_WIDGET(self)) / 2) - event->x;
+			self->zoom_point_y = (screenshot_editor_get_widget_height(GTK_WIDGET(self)) / 2) - event->y;
 			self->zoom_level *= .9;
+			
+			
 			
 			if (self->screenshot_width * self->zoom_level < screenshot_editor_get_widget_width(GTK_WIDGET(self))  &&  self->screenshot_height * self->zoom_level < screenshot_editor_get_widget_height(GTK_WIDGET(self))){
 				self->permanant_translate_x = 0;

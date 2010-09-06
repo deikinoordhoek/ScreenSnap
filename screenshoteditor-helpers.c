@@ -77,3 +77,12 @@ gint screenshot_editor_get_widget_height(GtkWidget *widget){
 	gtk_widget_get_allocation(widget, &allocation);
 	return allocation.height;
 }
+
+gint screenshot_editor_get_x(ScreenshotEditor *self, gint mouse_x){
+	gint output_x;
+	output_x = mouse_x / self->zoom_level;
+}
+gint screenshot_editor_get_y (ScreenshotEditor *self, gint mouse_y){
+	gint output_y;
+	output_y = mouse_y / self->zoom_level;
+}
