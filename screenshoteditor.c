@@ -206,14 +206,13 @@ void screenshot_editor_scroll(GtkWidget *widget, GdkEventScroll *event, Screensh
 			
 			self->zoom_point_x = (screenshot_editor_get_widget_width(GTK_WIDGET(self)) / 2) - event->x;
 			self->zoom_point_y = (screenshot_editor_get_widget_height(GTK_WIDGET(self)) / 2) - event->y;
-			shift_x = self->zoom_point_x * (self->zoom_level / .9) / self->zoom_level;
-			shift_y = self->zoom_point_y * (self->zoom_level / .9) / self->zoom_level;
+			shift_x = self->zoom_point_x * (self->zoom_level / .9 - self->zoom_level);
+			shift_y = self->zoom_point_y * (self->zoom_level / .9 - self->zoom_level);
 			self->zoom_level /= .9;
-			
 			g_printf("%f %f %f\n", event->x, event->y, self->zoom_level);
 			g_printf("%f %f\n", self->zoom_point_x, self->zoom_point_y);
 			g_printf("-------------\n");
-			screenshot_editor_scroll_relative(self,shift_x, shift_y);
+			screenshot_editor_scroll_relative(self, shift_x, shift_y);
 			
 		}
 		if (event->direction == GDK_SCROLL_DOWN && self->zoom_level > .1){
